@@ -31,3 +31,10 @@ body {
 .t-main-subtitle {
 	@apply mb-12 text-zinc-700;
 }
+
+
+/* Form */
+
+.f-label {
+	@apply block mb-2 text-gray-700 font-semibold
+}
