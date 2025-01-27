@@ -1,9 +1,10 @@
 "use client";
 import { addPost } from "@/lib/serverActions/blog/postServerActions";
+import { set } from "mongoose";
 import { useState, useRef } from "react";
 
 export default function page() {
-	const [tags, setTags] = useState(["css", "javascript"]);
+	const [tags, setTags] = useState([]);
 	const tagInputRef = useRef(null);
 
 	async function handleSubmit(e) {
@@ -15,9 +16,28 @@ export default function page() {
 		}
 		const result = await addPost(formData);
 	}
-	function handleAddTag() {}
+	function handleAddTag() {
+		// e.preventDefault() ici on n en a pas besoin vu qu on a deja specifier ds le  props du button que c est un type button
 
-	function handleRemoveTag(tag) {}
+		const newTag = tagInputRef.current.value.trim().toLowerCase() // on recupere la valeur de ce qui a été saisi trim est pr de supprimer les espaces et toLow  on la transforme en minuscule
+
+		if(newTag !== "" && !tags.includes(newTag) && tags.length <= 4) {
+			setTags([...tags, newTag]);
+			tagInputRef.current.value = "";
+		}
+	}
+
+	function handleRemoveTag(tagToRemove) {
+		setTags(tags.filter(tag => tag !== tagToRemove));
+
+	}
+
+	function handleEnterOnTagInput(e) {
+		if(e.key === "Enter") {
+			e.preventDefault();
+			handleAddTag();
+		}
+	}
 
 	return (
 		<main className="u-main-container bg-white p-7 mt-32 mb-44">
@@ -38,7 +58,7 @@ export default function page() {
 
 				<div className="mb-10">
 					<label className="f-label" htmlFor="tag">
-						Add a tag(s) (optional, max 5)
+						Add a tag(s) &nbsp; (optional, max 5)
 					</label>
 					<div className="flex">
 						<input
@@ -47,6 +67,7 @@ export default function page() {
 							id="tag"
 							placeholder="Add a tag"
 							ref={tagInputRef}
+							onKeyDown={handleEnterOnTagInput}
 						/>
 						<button
 							className="bg-indigo-500 hover:bg-indigo-700 text-white font-bold p-4 rounded mx-4"
