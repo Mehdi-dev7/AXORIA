@@ -10,6 +10,6 @@ export async function connectToDB() {
     console.log("Connected to database:", mongoose.connection.name);
   }
   catch(err) {
-    throw new Error("Failed to connect to database");
+    throw new Error(`Failde to connect to database: ${err.message}`);
   }
 }
