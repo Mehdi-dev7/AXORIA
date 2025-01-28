@@ -6,6 +6,11 @@ import { Tag } from "@/lib/models/tag";
 import { marked } from "marked";
 import { JSDOM } from "jsdom";
 import createDOMPurify from "dompurify";
+import  Prism  from "prismjs";
+import { markedHighlight } from "marked-highlight";
+import "prismjs/components/prism-markup";
+import "prismjs/components/prism-css";
+import "prismjs/components/prism-javascript";
 
 const window = new JSDOM("").window;
 const DOMPurify = createDOMPurify(window);
@@ -37,10 +42,22 @@ export async function addPost(formData) {
 		);
 
 		// GEstion du markdown
+
+		marked.use(
+			markedHighlight({
+				highlight: (code, language) => {
+					const validLanguage = Prism.languages[language] ? language : "plaintext";
+					return Prism.highlight(code, Prism.languages[validLanguage],validLanguage);
+				}
+			})
+		)
+
+
+
 		let markdownHTMLResult = marked(markdownArticle);
 		console.log(markdownHTMLResult, "markdownHTMLResult");
 
-		// markdownHTMLResult = DOMPurify.sanitize(markdownHTMLResult);
+		markdownHTMLResult = DOMPurify.sanitize(markdownHTMLResult);
 
 		const newPost = new Post({
 			title,

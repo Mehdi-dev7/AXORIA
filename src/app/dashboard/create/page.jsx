@@ -1,42 +1,72 @@
 "use client";
 import { addPost } from "@/lib/serverActions/blog/postServerActions";
 import { useState, useRef } from "react";
+import { useRouter } from "next/navigation";
 
 export default function page() {
 	const [tags, setTags] = useState([]);
+
+	const router = useRouter();
+
 	const tagInputRef = useRef(null);
+	const submitButtonRef = useRef(null);
+	const serverValidationText = useRef(null);
 
 	async function handleSubmit(e) {
 		e.preventDefault();
 
 		const formData = new FormData(e.target);
 		formData.set("tags", JSON.stringify(tags));
-		console.log();
-		
+		// console.log();
 
-		for (const [key, value] of formData.entries()) {
-			console.log(key, value);
+		// for (const [key, value] of formData.entries()) {
+		// 	console.log(key, value);
+		// }
+
+		serverValidationText.current.textContent = "";
+		submitButtonRef.current.textContent = "Saving Post ...";
+		submitButtonRef.current.disabled = true;
+
+		try {
+			const result = await addPost(formData);
+
+			if (result.success) {
+				submitButtonRef.current.textContent = "Post saved ✅";
+
+				let countdown = 3;
+				serverValidationText.current.textContent = `Redirecting in ${countdown} seconds...`;
+				const interval = setInterval(() => {
+					countdown -= 1;
+					serverValidationText.current.textContent = `Redirecting in ${countdown} seconds...`;
+					if (countdown === 0) {
+						clearInterval(interval);
+						router.push(`/article/${result.slug}`);
+					}
+				}, 1000);
+			}
+		} catch (error) {
+			serverValidationText.current.textContent = "Submit";
+			submitButtonRef.current.textContent = `${error.message}`
+			submitButtonRef.current.disabled = false;
 		}
-		const result = await addPost(formData);
 	}
 	function handleAddTag() {
 		// e.preventDefault() ici on n en a pas besoin vu qu on a deja specifier ds le  props du button que c est un type button
 
-		const newTag = tagInputRef.current.value.trim().toLowerCase() // on recupere la valeur de ce qui a été saisi trim est pr de supprimer les espaces et toLow  on la transforme en minuscule
+		const newTag = tagInputRef.current.value.trim().toLowerCase(); // on recupere la valeur de ce qui a été saisi trim est pr de supprimer les espaces et toLow  on la transforme en minuscule
 
-		if(newTag !== "" && !tags.includes(newTag) && tags.length <= 4) {
+		if (newTag !== "" && !tags.includes(newTag) && tags.length <= 4) {
 			setTags([...tags, newTag]);
 			tagInputRef.current.value = "";
 		}
 	}
 
 	function handleRemoveTag(tagToRemove) {
-		setTags(tags.filter(tag => tag !== tagToRemove));
-
+		setTags(tags.filter((tag) => tag !== tagToRemove));
 	}
 
 	function handleEnterOnTagInput(e) {
-		if(e.key === "Enter") {
+		if (e.key === "Enter") {
 			e.preventDefault();
 			handleAddTag();
 		}
@@ -86,10 +116,10 @@ export default function page() {
 									className="inline-block whitespace-nowrap bg-gray-200 text-gray-700 rounded-full px-3 py-1 mr-2 text-sm font-semibold"
 								>
 									{tag}
-									<button 
-									type="button" 
-									onClick={() => handleRemoveTag(tag)}
-									className="text-red-500 ml-2"
+									<button
+										type="button"
+										onClick={() => handleRemoveTag(tag)}
+										className="text-red-500 ml-2"
 									>
 										&times;
 									</button>
@@ -116,9 +146,13 @@ export default function page() {
 					className="shadow border rounded w-full p-8 text-gray-700 mb-4 focus:outline-slate-400 min-h-44 text-xl appearance-none"
 				></textarea>
 
-				<button className="min-w-44 bg-indigo-500 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded border-none mb-4">
+				<button
+					ref={submitButtonRef}
+					className="min-w-44 bg-indigo-500 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded border-none mb-4"
+				>
 					Submit
 				</button>
+				<p ref={serverValidationText}></p>
 			</form>
 		</main>
 	);

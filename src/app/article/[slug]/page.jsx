@@ -1,6 +1,7 @@
 import { getPost } from "@/lib/serverMethods/blog/postMethods";
 import Link from "next/link";
 import "./article-styles.css";
+import 'prism-themes/themes/prism-material-oceanic.css';
 
 export default async function page({ params }) {
 	const { slug } = await params;
