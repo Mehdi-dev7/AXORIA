@@ -1,6 +1,5 @@
 "use client";
 import { addPost } from "@/lib/serverActions/blog/postServerActions";
-import { set } from "mongoose";
 import { useState, useRef } from "react";
 
 export default function page() {
@@ -11,6 +10,10 @@ export default function page() {
 		e.preventDefault();
 
 		const formData = new FormData(e.target);
+		formData.set("tags", JSON.stringify(tags));
+		console.log();
+		
+
 		for (const [key, value] of formData.entries()) {
 			console.log(key, value);
 		}

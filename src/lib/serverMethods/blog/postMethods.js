@@ -1,11 +1,17 @@
 import { Post } from "@/lib/models/post";
 import { connectToDB } from "@/lib/utils/db/connectToDB";
+import { Tag } from "@/lib/models/tag";
 
 export async function getPost(slug) {
   try {
     await connectToDB();
 
-    const post = await Post.findOne({ slug });
+    const post = await Post.findOne({ slug }).populate({
+      path: "tags",
+      select: "name slug",
+    });
+    
+    
 
     return post;
   }
