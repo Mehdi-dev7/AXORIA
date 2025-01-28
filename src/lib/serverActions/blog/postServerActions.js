@@ -7,6 +7,9 @@ import { marked } from "marked";
 import { JSDOM } from "jsdom";
 import createDOMPurify from "dompurify";
 
+const window = new JSDOM("").window;
+const DOMPurify = createDOMPurify(window);
+
 export async function addPost(formData) {
 	const { title, markdownArticle, tags } = Object.fromEntries(formData);
 
@@ -36,6 +39,8 @@ export async function addPost(formData) {
 		// GEstion du markdown
 		let markdownHTMLResult = marked(markdownArticle);
 		console.log(markdownHTMLResult, "markdownHTMLResult");
+
+		// markdownHTMLResult = DOMPurify.sanitize(markdownHTMLResult);
 
 		const newPost = new Post({
 			title,
