@@ -10,7 +10,9 @@ export default async function page({ params }) {
 			<p className="mb-6">{post.tags.map(tag => (
 				<Link key={tag.slug} href={`categories/tag/${tag.slug}`} className="mr-4 underline">#{tag.name}</Link>
 			))}</p>
-      <p>{post.markdownArticle}</p>
+      <div className="article-styles" dangerouslySetInnerHTML={{__html: post.markdownHTMLResult}}>
+
+			</div>
 		</main>
 	);
 }
