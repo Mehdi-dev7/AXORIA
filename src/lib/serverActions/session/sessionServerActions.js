@@ -84,7 +84,7 @@ export async function login(formData) {
 
 		await session.save();
 
-		const cookieStore = cookies()
+		const cookieStore = await cookies()
 		cookieStore.set("sessionId", session._id.toString(), {
 			httpOnly: true,
 			secure: process.env.NODE_ENV === "production",
@@ -92,6 +92,8 @@ export async function login(formData) {
 			maxAge: 7 * 24 *60 * 60,
 			sameSite: "Lax" // Attaques CSRF
 		})
+		
+		
 
 		return {success : true}
 

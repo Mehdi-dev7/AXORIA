@@ -1,13 +1,33 @@
 "use client";
 import { useRef } from "react";
+import { login } from "@/lib/serverActions/session/sessionServerActions";
+import { useRouter } from "next/navigation";
 
 export default function page() {
 	const serverInfoRef = useRef();
 	const submitButtonRef = useRef();
+	const router = useRouter();
 
 	async function handleSubmit(e) {
 		e.preventDefault();
-	}
+
+		serverInfoRef.current.textContent = ""   // on vide le texte du ref
+		submitButtonRef.current.disabled = true; // on désactive le bouton
+
+		try {
+			const result = await login(new FormData(e.target));
+			if (result.success) {
+				router.push("/")
+			}
+		}
+
+		catch (error) {
+			submitButtonRef.current.textContent = "Submit";
+			serverInfoRef.current.textContent = `${error.message}`;
+			submitButtonRef.current.disabled = false;
+
+		}
+}
 	return (
 		<form className="max-w-md mx-auto mt-36" onSubmit={handleSubmit}>
 			<label htmlFor="userName" className="f-label">
@@ -42,3 +62,4 @@ export default function page() {
 		</form>
 	);
 }
+
