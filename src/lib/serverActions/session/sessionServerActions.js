@@ -70,19 +70,23 @@ export async function login(formData) {
 		if (!isPasswordValid) {
 			throw new Error("Invalid credentials");
 		}
-
+    // Vérifier si l'utilisateur est déjà connecté
+		let session
 		const existingSession = await Session.findOne({
 			userId: user._id,
-			expiresAt: { $gt: Date.now() },
+			expiresAt: { $gt: new Date() },
 		});
-		if (existingSession) return { success: true };
-
-		const session = new Session({
-			userId: user._id,
-			expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
-		});
-
-		await session.save();
+		if (existingSession) {
+			session = existingSession;
+		  existingSession.expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+			await existingSession.save();
+		} else {
+			session = new Session({
+				userId: user._id,
+				expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
+			});
+			await session.save();
+		}
 
 		const cookieStore = await cookies()
 		cookieStore.set("sessionId", session._id.toString(), {

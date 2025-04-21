@@ -143,6 +143,7 @@ export default function page() {
 				<textarea
 					name="markdownArticle"
 					id="markdownArticle"
+					required
 					className="shadow border rounded w-full p-8 text-gray-700 mb-4 focus:outline-slate-400 min-h-44 text-xl appearance-none"
 				></textarea>
 

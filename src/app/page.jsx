@@ -2,23 +2,7 @@ import Link from "next/link";
 import { connectToDB } from "@/lib/utils/db/connectToDB";
 import { getPosts } from "@/lib/serverMethods/blog/postMethods";
 
-// const post = [
-// 	{
-// 		author: "John Doe",
-// 		title: "5 CSS tricks",
-// 	},
-// 	{
-// 		author: "Victor Wallas",
-// 		title: "How to code a navbar",
-// 	},
-// 	{
-// 		author: "Bruce Willis",
-// 		title: "How to setup TypeScript",
-// 	},
-// ];
-
 export default async function Home() {
-	await connectToDB();
 
 	const posts = await getPosts();
 	

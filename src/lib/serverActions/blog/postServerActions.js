@@ -1,16 +1,16 @@
 "use server";
 import { Post } from "@/lib/models/post";
-import { connectToDB } from "@/lib/utils/db/connectToDB";
-import slugify from "slugify";
 import { Tag } from "@/lib/models/tag";
-import { marked } from "marked";
-import { JSDOM } from "jsdom";
+import { connectToDB } from "@/lib/utils/db/connectToDB";
 import createDOMPurify from "dompurify";
-import  Prism  from "prismjs";
+import { JSDOM } from "jsdom";
+import { marked } from "marked";
 import { markedHighlight } from "marked-highlight";
-import "prismjs/components/prism-markup";
+import Prism from "prismjs";
 import "prismjs/components/prism-css";
 import "prismjs/components/prism-javascript";
+import "prismjs/components/prism-markup";
+import slugify from "slugify";
 
 const window = new JSDOM("").window;
 const DOMPurify = createDOMPurify(window);
@@ -46,13 +46,17 @@ export async function addPost(formData) {
 		marked.use(
 			markedHighlight({
 				highlight: (code, language) => {
-					const validLanguage = Prism.languages[language] ? language : "plaintext";
-					return Prism.highlight(code, Prism.languages[validLanguage],validLanguage);
-				}
+					const validLanguage = Prism.languages[language]
+						? language
+						: "plaintext";
+					return Prism.highlight(
+						code,
+						Prism.languages[validLanguage],
+						validLanguage
+					);
+				},
 			})
-		)
-
-
+		);
 
 		let markdownHTMLResult = marked(markdownArticle);
 		console.log(markdownHTMLResult, "markdownHTMLResult");

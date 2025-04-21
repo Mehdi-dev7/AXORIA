@@ -37,8 +37,8 @@ export default function page() {
           }, 1000);
         }
       } catch (error) {
-        serverInfoRef.current.textContent = "Submit";
-        submitButtonRef.current.textContent = `${error.message}`
+        submitButtonRef.current.textContent = "Submit";
+        serverInfoRef.current.textContent = `${error.message}`
         submitButtonRef.current.disabled = false;
       }
     }

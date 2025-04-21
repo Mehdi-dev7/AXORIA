@@ -22,6 +22,7 @@ export default function page() {
 		}
 
 		catch (error) {
+			console.log("Error while signing in the user :",error);
 			submitButtonRef.current.textContent = "Submit";
 			serverInfoRef.current.textContent = `${error.message}`;
 			submitButtonRef.current.disabled = false;
