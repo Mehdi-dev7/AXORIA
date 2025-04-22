@@ -45,8 +45,8 @@ export default function page() {
 				}, 1000);
 			}
 		} catch (error) {
-			serverValidationText.current.textContent = "Submit";
-			submitButtonRef.current.textContent = `${error.message}`
+			serverValidationText.current.textContent = `${error.message}`;
+			submitButtonRef.current.textContent = "Submit";
 			submitButtonRef.current.disabled = false;
 		}
 	}

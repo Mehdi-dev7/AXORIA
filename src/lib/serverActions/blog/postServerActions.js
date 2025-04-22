@@ -12,6 +12,8 @@ import "prismjs/components/prism-javascript";
 import "prismjs/components/prism-markup";
 import slugify from "slugify";
 import { AppError } from "@/lib/utils/errorHandling/customError";
+import { sessionInfo } from "@/lib/serverMethods/session/sessionMethods";
+
 const window = new JSDOM("").window;
 const DOMPurify = createDOMPurify(window);
 
@@ -20,7 +22,7 @@ export async function addPost(formData) {
 
 	try {
 
-		if(typeof title !== "string" || title.trim().length < 3) {
+		if(typeof title !== "string" || title.trim().length < 2) {
 			throw new AppError("Invalid data")
 		}
 		if(typeof markdownArticle !== "string" || markdownArticle.trim().length === 0) {
@@ -62,7 +64,7 @@ export async function addPost(formData) {
 			})
 		);
 
-		// GEstion du markdown
+		// Gestion du markdown
 
 		marked.use(
 			markedHighlight({
