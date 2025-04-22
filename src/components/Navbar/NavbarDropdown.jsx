@@ -3,6 +3,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { logout, isPrivatePage } from "@/lib/serverActions/session/sessionServerActions";
+
 export default function NavbarDropdown() {
 	const [isOpen, setIsOpen] = useState(false);
 	const dropdownRef = useRef(null);
@@ -11,13 +13,26 @@ export default function NavbarDropdown() {
 	function toggleDropdown() {
 		setIsOpen(!isOpen);
 	}
-  function handleLogout() {
-    router.push("/signin");
+  async function handleLogout() {
+		await logout();
+    
+		if(isPrivatePage(window.location.pathname)) {
+			router.push("/signin");
+		}
   }
 
 	useEffect(() => {
-		const handleClickOutside = (event) => {};
-	});
+		function handleClickOutside  (event)  {
+			if (!dropdownRef.current.contains(event.target)) {
+				setIsOpen(false);
+			}
+		};
+		document.addEventListener("click", handleClickOutside);
+		return () => {
+			document.removeEventListener("click", handleClickOutside);
+
+		};
+	}, []);
 	return (
 		<div className="relative" ref={dropdownRef}>
 			<button className="flex" onClick={toggleDropdown}>
@@ -26,7 +41,11 @@ export default function NavbarDropdown() {
 			{isOpen && (
 				<ul className="absolute right-0 top-10 w-[250px] border-b border-x border-zinc-300">
 					<li className="bg-slate-50 hover:bg-slate-200 border-b border-slate-300">
-						<Link className="block p-4" href="/dashboard">
+						<Link
+							className="block p-4"
+							href="/dashboard"
+							onClick={() => setIsOpen(false)}
+						>
 							Dashboard
 						</Link>
 					</li>

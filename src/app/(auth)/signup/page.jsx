@@ -37,6 +37,8 @@ export default function page() {
           }, 1000);
         }
       } catch (error) {
+
+				serverInfoRef.current.classList.remove("hidden");
         submitButtonRef.current.textContent = "Submit";
         serverInfoRef.current.textContent = `${error.message}`
         submitButtonRef.current.disabled = false;
@@ -99,7 +101,7 @@ export default function page() {
 				Submit
 			</button>
       <p ref={serverInfoRef}
-          className="hidden text-center mb-10"
+          className="hidden text-center mb-10 text-red-500"
       ></p>
 
 			<a

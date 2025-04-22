@@ -59,7 +59,7 @@ export default function page() {
 			>
 				Submit
 			</button>
-			<p ref={serverInfoRef} className="text-center mb-10"></p>
+			<p ref={serverInfoRef} className="text-center mb-10 text-red-500"></p>
 		</form>
 	);
 }

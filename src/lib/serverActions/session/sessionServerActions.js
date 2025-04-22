@@ -1,33 +1,38 @@
 "use server";
-import { connectToDB } from "@/lib/utils/db/connectToDB";
-import slugify from "slugify";
-import { User } from "@/lib/models/user";
-import bcrypt from "bcryptjs";
 import { Session } from "@/lib/models/session";
+import { User } from "@/lib/models/user";
+import { connectToDB } from "@/lib/utils/db/connectToDB";
+import bcrypt from "bcryptjs";
 import { cookies } from "next/headers";
-
+import slugify from "slugify";
+import { AppError } from "@/lib/utils/errorHandling/customError";
 export async function register(formData) {
 	const { userName, email, password, passwordRepeat } =
 		Object.fromEntries(formData); // On ne peut pas faire du destrtucuting de formData ce n est pas un obj iterable
 
-	if (userName.lenght < 3) {
-		throw new Error("Username is too short");
-	}
-
-	if (password.length < 6) {
-		throw new Error("Password is too short");
-	}
-
-	if (password !== passwordRepeat) {
-		throw new Error("Passwords do not match");
-	}
-
 	try {
-		connectToDB();
-		const user = await User.findOne({ userName });
+		if (typeof userName !== "string" || userName.trim().length < 3) {
+			throw new AppError("Username must be at least 3 characters long");
+		}
+
+		if (typeof password !== "string" || password.trim().length < 6) {
+			throw new AppError("Password must be at least 6 characters long");
+		}
+
+		if (password !== passwordRepeat) {
+			throw new AppError("Passwords do not match");
+		}
+
+		const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+		if(typeof email !== "string" || !emailRegex.test(email.trim())) {
+			throw new AppError("Invalid email format")
+		}
+
+		await connectToDB();
+		const user = await User.findOne({ $or: [{ userName }, { email }] });
 
 		if (user) {
-			throw new Error("Username already exists");
+			throw new AppError(user.userName === userName ? "Username already exists" : "Email already exists");
 		}
 		const normalizedUserName = slugify(userName, { lower: true, strict: true });
 
@@ -47,10 +52,11 @@ export async function register(formData) {
 
 		return { success: true };
 	} catch (error) {
-		console.log("Error while creating the user:", error);
-		throw new Error(
-			error.message || "An error occured while creating the user"
-		);
+		console.log("Error while registering the user", error);
+		if(error instanceof AppError) {
+			throw error
+		}
+		throw new Error("An error occured while registering the user")
 	}
 }
 
@@ -70,15 +76,17 @@ export async function login(formData) {
 		if (!isPasswordValid) {
 			throw new Error("Invalid credentials");
 		}
-    // Vérifier si l'utilisateur est déjà connecté
-		let session
+		// Vérifier si l'utilisateur est déjà connecté
+		let session;
 		const existingSession = await Session.findOne({
 			userId: user._id,
 			expiresAt: { $gt: new Date() },
 		});
 		if (existingSession) {
 			session = existingSession;
-		  existingSession.expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+			existingSession.expiresAt = new Date(
+				Date.now() + 7 * 24 * 60 * 60 * 1000
+			); // 7 days
 			await existingSession.save();
 		} else {
 			session = new Session({
@@ -88,25 +96,49 @@ export async function login(formData) {
 			await session.save();
 		}
 
-		const cookieStore = await cookies()
+		const cookieStore = await cookies();
 		cookieStore.set("sessionId", session._id.toString(), {
 			httpOnly: true,
 			secure: process.env.NODE_ENV === "production",
 			path: "/",
-			maxAge: 7 * 24 *60 * 60,
-			sameSite: "Lax" // Attaques CSRF
-		})
-		
-		
+			maxAge: 7 * 24 * 60 * 60,
+			sameSite: "Lax", // Attaques CSRF
+		});
 
-		return {success : true}
-
+		return { success: true };
 	} catch (error) {
-		console.log("Error while signing in the user :",error);
+		console.log("Error while signing in the user :", error);
 
 		throw new Error(
 			error.message || "An error occured while signing in the user"
 		);
-		
 	}
+}
+
+export async function logout() {
+	const cookieStore = await cookies();
+	const sessionId = cookieStore.get("sessionId")?.value;
+
+	try {
+		await Session.findByIdAndDelete(sessionId);
+
+		cookieStore.set("sessionId", "", {
+			httpOnly: true,
+			secure: process.env.NODE_ENV === "production",
+			path: "/",
+			maxAge: 0, // On supprime le cookie immédiatement
+			sameSite: "strict",
+		});
+		return { success: true };
+	} catch (error) {
+		console.log("Error while signing out the user :", error);
+	}
+}
+
+export async function isPrivatePage(pathname) {
+	const privateSegments = ["/dashboard", "/settings/profile"];
+
+	return privateSegments.some(
+		(segment) => pathname === segment || pathname.startsWith(segment + "/")
+	);
 }

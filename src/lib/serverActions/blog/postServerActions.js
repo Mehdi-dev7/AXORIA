@@ -11,7 +11,7 @@ import "prismjs/components/prism-css";
 import "prismjs/components/prism-javascript";
 import "prismjs/components/prism-markup";
 import slugify from "slugify";
-
+import { AppError } from "@/lib/utils/errorHandling/customError";
 const window = new JSDOM("").window;
 const DOMPurify = createDOMPurify(window);
 
@@ -19,10 +19,31 @@ export async function addPost(formData) {
 	const { title, markdownArticle, tags } = Object.fromEntries(formData);
 
 	try {
+
+		if(typeof title !== "string" || title.trim().length < 3) {
+			throw new AppError("Invalid data")
+		}
+		if(typeof markdownArticle !== "string" || markdownArticle.trim().length === 0) {
+			throw new AppError("Invalid data")
+		}
+		
 		await connectToDB();
 
+		const session = await sessionInfo()
+		if(!session.success) {
+			throw new AppError("Authentication required")
+		}
+
 		// Gestion des tags
+		if(typeof tags !== "string" ) {
+			throw new AppError("Invalid data")
+		}
+
 		const tagNamesArray = JSON.parse(tags);
+		if(!Array.isArray(tagNamesArray)) {
+			throw new AppError("Tags must be a valid array")
+		}
+
 
 		const tagIds = await Promise.all(
 			tagNamesArray.map(async (tagName) => {
@@ -76,6 +97,10 @@ export async function addPost(formData) {
 		return { success: true, slug: savedPost.slug };
 	} catch (err) {
 		console.log("Error while creating the post:", err);
-		throw new Error(err.message || "An error occured while creating the post");
+		
+		if(err instanceof AppError) {
+			throw err
+		}
+		throw new AppError("An error occured while creating the post")
 	}
 }

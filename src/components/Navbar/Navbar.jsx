@@ -15,7 +15,7 @@ export default async function Navbar() {
 				</Link>
 				{session.success ? (
 					<>
-					<Link href="/dashboard/create" className="mx-2 text-zinc-900">
+					<Link href="/dashboard/create" className="mx-6 text-zinc-900">
 						Add an article
 					</Link>
           <NavbarDropdown />
