@@ -75,26 +75,27 @@ export default function page() {
 
 	function handleFileChange(e) {
 		const file = e.target.files[0];
-		const validImageTypes = ["image/jpeg", "image/png", "image/webp"];
+		const validImageTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
 		console.log(file);
 		if (!validImageTypes.includes(file.type)) {
-			imgUploaderValidationText.current.textContent = "Please upload a valid image (JPEG, PNG or WebP."
+			imgUploaderValidationText.current.textContent =
+				"Please upload a valid image (JPEG, PNG or WebP.";
 			e.target.value = "";
 			return;
-
 		} else {
 			imgUploaderValidationText.current.textContent = "";
 		}
-		const img = new Image()
-		img.checkImgSizeOnLoad("load", checkImgSizeOnLoad) 
+		const img = new Image();
+		img.addEventListener("load", checkImgSizeOnLoad);
 
 		function checkImgSizeOnLoad() {
 			if (img.width > 1280 || img.height > 720) {
-				imgUploaderValidationText.current.textContent = "Image exceeds 128x720 dimensions"
+				imgUploaderValidationText.current.textContent =
+					"Image exceeds 1280x720 dimensions";
 				e.target.value = "";
 				URL.revokeObjectURL(img.src);
 				return;
-			}else {
+			} else {
 				imgUploaderValidationText.current.textContent = "";
 				URL.revokeObjectURL(img.src);
 			}
