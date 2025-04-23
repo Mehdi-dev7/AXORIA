@@ -1,8 +1,14 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  images: {
-    domains: ['firebasestorage.googleapis.com'], // Ajoutez le domaine de Firebase ici
-  },
+	images: {
+		remotePatterns: [
+			{
+				protocol: "https",
+				hostname: "axoriablogéducation12.b-cdn.net",
+				pathname: "/**",
+			},
+		],
+	},
 };
 
 export default nextConfig;

@@ -1,7 +1,7 @@
 "use client";
 import { addPost } from "@/lib/serverActions/blog/postServerActions";
-import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { useRef, useState } from "react";
 
 export default function page() {
 	const [tags, setTags] = useState([]);
@@ -11,6 +11,7 @@ export default function page() {
 	const tagInputRef = useRef(null);
 	const submitButtonRef = useRef(null);
 	const serverValidationText = useRef(null);
+	const imgUploaderValidationText = useRef(null);
 
 	async function handleSubmit(e) {
 		e.preventDefault();
@@ -72,6 +73,35 @@ export default function page() {
 		}
 	}
 
+	function handleFileChange(e) {
+		const file = e.target.files[0];
+		const validImageTypes = ["image/jpeg", "image/png", "image/webp"];
+		console.log(file);
+		if (!validImageTypes.includes(file.type)) {
+			imgUploaderValidationText.current.textContent = "Please upload a valid image (JPEG, PNG or WebP."
+			e.target.value = "";
+			return;
+
+		} else {
+			imgUploaderValidationText.current.textContent = "";
+		}
+		const img = new Image()
+		img.checkImgSizeOnLoad("load", checkImgSizeOnLoad) 
+
+		function checkImgSizeOnLoad() {
+			if (img.width > 1280 || img.height > 720) {
+				imgUploaderValidationText.current.textContent = "Image exceeds 128x720 dimensions"
+				e.target.value = "";
+				URL.revokeObjectURL(img.src);
+				return;
+			}else {
+				imgUploaderValidationText.current.textContent = "";
+				URL.revokeObjectURL(img.src);
+			}
+		}
+		img.src = URL.createObjectURL(file);
+	}
+
 	return (
 		<main className="u-main-container bg-white p-7 mt-32 mb-44">
 			<h1 className="text-4xl mb-4">Write an article 📝</h1>
@@ -88,6 +118,20 @@ export default function page() {
 					placeholder="Title"
 					required
 				/>
+
+				<label htmlFor="coverImage" className="f-label">
+					Cover image (1280x720 for the best quality, or less)
+				</label>
+				<input
+					type="file"
+					name="coverImage"
+					id="coverImage"
+					required
+					placeholder="Article's cover image"
+					className="shadow cursor-pointer border rounded w-full p-3 mb-2 text-gray-700 focus:outline-none focus:shadow-outline"
+					onChange={handleFileChange}
+				/>
+				<p ref={imgUploaderValidationText} className="text-red-700 mb-7"></p>
 
 				<div className="mb-10">
 					<label className="f-label" htmlFor="tag">
