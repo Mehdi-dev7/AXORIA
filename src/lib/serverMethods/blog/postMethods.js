@@ -8,6 +8,9 @@ export async function getPost(slug) {
     await connectToDB();
 
     const post = await Post.findOne({ slug }).populate({
+      path: "author",
+      select: "userName normalizedUserName",
+    }).populate({
       path: "tags",
       select: "name slug",
     });

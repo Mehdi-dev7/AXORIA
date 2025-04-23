@@ -135,6 +135,7 @@ export async function addPost(formData) {
 			tags: tagIds,
 			markdownHTMLResult,
 			coverImageUrl: publicImageUrl,
+			author: session.userId,
 		});
 
 		const savedPost = await newPost.save();
