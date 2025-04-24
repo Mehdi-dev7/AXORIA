@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { logout, isPrivatePage } from "@/lib/serverActions/session/sessionServerActions";
 
-export default function NavbarDropdown() {
+export default function NavbarDropdown({userId}) {
 	const [isOpen, setIsOpen] = useState(false);
 	const dropdownRef = useRef(null);
 	const router = useRouter();
@@ -43,7 +43,7 @@ export default function NavbarDropdown() {
 					<li className="bg-slate-50 hover:bg-slate-200 border-b border-slate-300">
 						<Link
 							className="block p-4"
-							href="/dashboard"
+							href={`/dashboard/${userId}`}
 							onClick={() => setIsOpen(false)}
 						>
 							Dashboard

@@ -17,6 +17,7 @@ import sharp from "sharp";
 import slugify from "slugify";
 const window = new JSDOM("").window;
 const DOMPurify = createDOMPurify(window);
+import { revalidatePath } from "next/cache";
 
 export async function addPost(formData) {
 	const { title, markdownArticle, tags, coverImage } =
@@ -148,6 +149,58 @@ export async function addPost(formData) {
 		if (err instanceof AppError) {
 			throw err;
 		}
+		console.error(err);
 		throw new AppError("An error occured while creating the post");
+	}
+}
+
+export async function deletePost(id) {
+	try {
+		await connectToDB();
+		const session = await sessionInfo();
+		if (!session.success) {
+			throw new AppError("Authentication required");
+		}
+
+		const post = await Post.findById(id);
+		if (!post) {
+			throw new AppError("Post not found");
+		}
+
+		// Vérifier si l'utilisateur est l'auteur du post
+		if (post.author.toString() !== session.userId) {
+			throw new AppError("You are not authorized to delete this post");
+		}
+
+		await Post.findByIdAndDelete(id);
+
+		if (post.coverImageUrl) {
+			const fileName = post.coverImageUrl.split("/").pop();
+			const deleteUrl = `${process.env.BUNNY_STORAGE_HOST}/${process.env.BUNNY_STORAGE_ZONE}/${fileName}`;
+
+			const response = await fetch(deleteUrl, {
+				method: "DELETE",
+				headers: {
+					accesskey: process.env.BUNNY_STORAGE_API_KEY,
+				},
+			});
+
+			if (!response.ok) {
+				throw new AppError(
+					`Failed to delete cover image : ${response.statusText}`
+				);
+			}
+		}
+
+		revalidatePath(`/articles/${post.slug}`);
+		return { success: true };
+	} catch (err) {
+		console.log("Error while deleting the post:", err);
+
+		if (err instanceof AppError) {
+			throw err;
+		}
+		console.error(err);
+		throw new AppError("An error occurred while deleting the post");
 	}
 }
