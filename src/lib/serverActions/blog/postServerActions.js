@@ -126,7 +126,7 @@ export async function addPost(formData) {
 		);
 
 		let markdownHTMLResult = marked(markdownArticle);
-		console.log(markdownHTMLResult, "markdownHTMLResult");
+		// console.log(markdownHTMLResult, "markdownHTMLResult");
 
 		markdownHTMLResult = DOMPurify.sanitize(markdownHTMLResult);
 
@@ -140,7 +140,7 @@ export async function addPost(formData) {
 		});
 
 		const savedPost = await newPost.save();
-		console.log("Post saved");
+		// console.log("Post saved");
 
 		return { success: true, slug: savedPost.slug };
 	} catch (err) {

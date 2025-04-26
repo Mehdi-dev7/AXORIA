@@ -48,7 +48,7 @@ export async function register(formData) {
 
 		await newUser.save();
 
-		console.log("User saved to db");
+		// console.log("User saved to db");
 
 		return { success: true };
 	} catch (error) {

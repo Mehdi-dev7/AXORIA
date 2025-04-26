@@ -48,7 +48,7 @@ postSchema.pre("save", async function (next) {
     }
 
       this.slug = slugCandidate;
-      console.log("Final slug:", slugCandidate);
+      // console.log("Final slug:", slugCandidate);
       
     }
     next();
