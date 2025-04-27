@@ -1,5 +1,6 @@
 "use client";
-import { addPost } from "@/lib/serverActions/blog/postServerActions";
+import { editPost } from "@/lib/serverActions/blog/postServerActions";
+import { areTagSimilar } from "@/lib/utils/general/utils";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 
@@ -17,19 +18,41 @@ export default function ClientEditForm({ post }) {
 		e.preventDefault();
 
 		const formData = new FormData(e.target);
-		formData.set("tags", JSON.stringify(tags));
-		// console.log();
+		const readableFormData = Object.fromEntries(formData);
+		const areSameTags = areTagSimilar(tags, post.tags);
+		console.log(readableFormData);
 
-		// for (const [key, value] of formData.entries()) {
-		// 	console.log(key, value);
-		// }
+		// Vérifier si l'image a été modifiée
+		const isImageModified = readableFormData.coverImage.size > 0;
+
+		if (
+			!isImageModified &&
+			readableFormData.title.trim() === post.title &&
+			readableFormData.markdownArticle.trim() === post.markdownArticle.trim() &&
+			areSameTags
+		) {
+			serverValidationText.current.textContent =
+				"You must make a change before submitting";
+			return;
+		} else {
+			serverValidationText.current.textContent = "";
+		}
+
+		// Si l'image n'a pas été modifiée, on la retire du FormData
+		if (!isImageModified) {
+			formData.delete("coverImage");
+		}
+
+		formData.set("tags", JSON.stringify(tags));
+		formData.set("isEditMode", "true");
+		formData.set("postToEditStringified", JSON.stringify(post));
 
 		serverValidationText.current.textContent = "";
 		submitButtonRef.current.textContent = "Updating Post ...";
 		submitButtonRef.current.disabled = true;
 
 		try {
-			const result = await addPost(formData);
+			const result = await editPost(formData);
 
 			if (result.success) {
 				submitButtonRef.current.textContent = "Post updated ✅";
@@ -127,13 +150,16 @@ export default function ClientEditForm({ post }) {
 				/>
 
 				<label htmlFor="coverImage" className="f-label">
-					Cover image (1280x720 for the best quality, or less)
+					<span>Cover image (1280x720 for the best quality, or less)</span>
+					<span className="block font-normal">
+						Changing the image is <span className="font-bold">optional</span> in
+						edit mode
+					</span>
 				</label>
 				<input
 					type="file"
 					name="coverImage"
 					id="coverImage"
-					required
 					placeholder="Article's cover image"
 					className="shadow cursor-pointer border rounded w-full p-3 mb-2 text-gray-700 focus:outline-none focus:shadow-outline"
 					onChange={handleFileChange}

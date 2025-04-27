@@ -2,13 +2,16 @@
 import { Post } from "@/lib/models/post";
 import { Tag } from "@/lib/models/tag";
 import { sessionInfo } from "@/lib/serverMethods/session/sessionMethods";
+import { findOrCreateTag } from "@/lib/serverMethods/tag/tagMethods";
 import { connectToDB } from "@/lib/utils/db/connectToDB";
 import { AppError } from "@/lib/utils/errorHandling/customError";
+import { areTagSimilar, generateUniqueSlug } from "@/lib/utils/general/utils";
 import crypto from "crypto";
 import createDOMPurify from "dompurify";
 import { JSDOM } from "jsdom";
 import { marked } from "marked";
 import { markedHighlight } from "marked-highlight";
+import { revalidatePath } from "next/cache";
 import Prism from "prismjs";
 import "prismjs/components/prism-css";
 import "prismjs/components/prism-javascript";
@@ -17,7 +20,6 @@ import sharp from "sharp";
 import slugify from "slugify";
 const window = new JSDOM("").window;
 const DOMPurify = createDOMPurify(window);
-import { revalidatePath } from "next/cache";
 
 export async function addPost(formData) {
 	const { title, markdownArticle, tags, coverImage } =
@@ -42,9 +44,10 @@ export async function addPost(formData) {
 		}
 
 		// Gestion de l'image de couverture
-		if (!coverImage || !coverImage instanceof File) {
-			throw new AppError("Invalid cover image");
+		if (!coverImage || !(coverImage instanceof File) || coverImage.size === 0) {
+			throw new AppError("Cover image is required for new posts");
 		}
+
 		const validImageTypes = [
 			"image/jpeg",
 			"image/jpg",
@@ -109,7 +112,6 @@ export async function addPost(formData) {
 		);
 
 		// Gestion du markdown
-
 		marked.use(
 			markedHighlight({
 				highlight: (code, language) => {
@@ -126,8 +128,6 @@ export async function addPost(formData) {
 		);
 
 		let markdownHTMLResult = marked(markdownArticle);
-		// console.log(markdownHTMLResult, "markdownHTMLResult");
-
 		markdownHTMLResult = DOMPurify.sanitize(markdownHTMLResult);
 
 		const newPost = new Post({
@@ -140,7 +140,6 @@ export async function addPost(formData) {
 		});
 
 		const savedPost = await newPost.save();
-		// console.log("Post saved");
 
 		return { success: true, slug: savedPost.slug };
 	} catch (err) {
@@ -151,6 +150,133 @@ export async function addPost(formData) {
 		}
 		console.error(err);
 		throw new AppError("An error occured while creating the post");
+	}
+}
+
+export async function editPost(formData) {
+	const { postToEditStringified, title, markdownArticle, tags, coverImage } =
+		Object.fromEntries(formData);
+
+	const postToEdit = JSON.parse(postToEditStringified);
+
+	// console.log(
+	// 	postToEdit,
+	// 	postToEditStringified,
+	// 	title,
+	// 	markdownArticle,
+	// 	tags,
+	// 	coverImage,
+	// 	"postToEdit"
+	// );
+
+	try {
+		await connectToDB();
+
+		const session = await sessionInfo();
+		if (!session.success) {
+			throw new Error("Authentication required");
+		}
+		const updatedData = {};
+
+		if (typeof title !== "string") throw new Error();
+		if (title.trim() !== postToEdit.title) {
+			updatedData.title = title;
+			updatedData.slug = await generateUniqueSlug(title);
+		}
+		if (typeof markdownArticle !== "string") throw new Error();
+		if (markdownArticle.trim() !== postToEdit.markdownArticle) {
+			updatedData.markdownHTMLResult = DOMPurify.sanitize(
+				marked(markdownArticle)
+			);
+			updatedData.markdownArticle = markdownArticle;
+		}
+
+		// Gestion de l'image de couverture
+		if (coverImage && coverImage instanceof File && coverImage.size > 0) {
+			const validImageTypes = [
+				"image/jpeg",
+				"image/jpg",
+				"image/png",
+				"image/webp",
+			];
+			if (!validImageTypes.includes(coverImage.type)) {
+				throw new AppError("Invalid cover image");
+			}
+
+			const imageBuffer = Buffer.from(await coverImage.arrayBuffer());
+			const { width, height } = await sharp(imageBuffer).metadata();
+			if (width > 1280 || height > 720) {
+				throw new AppError("Invalid cover image dimensions");
+			}
+
+			// Supprimer l'ancienne image
+			const toDeleteImageFileName = postToEdit.coverImageUrl.split("/").pop();
+			const deleteUrl = `${process.env.BUNNY_STORAGE_HOST}/${process.env.BUNNY_STORAGE_ZONE}/${toDeleteImageFileName}`;
+
+			const imageDeleteResponse = await fetch(deleteUrl, {
+				method: "DELETE",
+				headers: {
+					accesskey: process.env.BUNNY_STORAGE_API_KEY,
+				},
+			});
+
+			if (!imageDeleteResponse.ok && imageDeleteResponse.status !== 404) {
+				throw new AppError(
+					`Error while deleting the image : ${imageDeleteResponse.statusText}`
+				);
+			}
+
+			// Upload la nouvelle image
+			const imageToUploadFileName = `${crypto.randomUUID()}_${coverImage.name}`;
+			const imageToUploadUrl = `${process.env.BUNNY_STORAGE_HOST}/${process.env.BUNNY_STORAGE_ZONE}/${imageToUploadFileName}`;
+			const imageToUploadPublicUrl = `https://axoriablogeducation12.b-cdn.net/${imageToUploadFileName}`;
+
+			const imageToUploadResponse = await fetch(imageToUploadUrl, {
+				method: "PUT",
+				headers: {
+					accesskey: process.env.BUNNY_STORAGE_API_KEY,
+					"Content-type": "application/octet-stream",
+				},
+				body: imageBuffer,
+			});
+
+			if (!imageToUploadResponse.ok) {
+				throw new AppError(
+					`Error while uploading the image : ${imageToUploadResponse.statusText}`
+				);
+			}
+
+			updatedData.coverImageUrl = imageToUploadPublicUrl;
+		}
+
+		// Gestion des tags
+		if (typeof tags !== "string") throw new Error();
+
+		const tagNamesArray = JSON.parse(tags);
+		if (!Array.isArray(tagNamesArray)) throw new AppError();
+
+		if (!areTagSimilar(tagNamesArray, postToEdit.tags)) {
+			const tagIds = await Promise.all(
+				tagNamesArray.map((tag) => findOrCreateTag(tag))
+			);
+			updatedData.tags = tagIds;
+		}
+
+		if (Object.keys(updatedData).length === 0) throw new Error();
+
+		const updatedPost = await Post.findByIdAndUpdate(
+			postToEdit._id,
+			updatedData,
+			{ new: true }
+		);
+
+		return { success: true, slug: updatedPost.slug };
+	} catch (err) {
+		if (err instanceof AppError) {
+			throw err;
+		}
+		console.error(err);
+		throw new AppError("An error occured while editing the post");
 	}
 }
 
@@ -175,20 +301,25 @@ export async function deletePost(id) {
 		await Post.findByIdAndDelete(id);
 
 		if (post.coverImageUrl) {
-			const fileName = post.coverImageUrl.split("/").pop();
-			const deleteUrl = `${process.env.BUNNY_STORAGE_HOST}/${process.env.BUNNY_STORAGE_ZONE}/${fileName}`;
+			try {
+				const fileName = post.coverImageUrl.split("/").pop();
+				const deleteUrl = `${process.env.BUNNY_STORAGE_HOST}/${process.env.BUNNY_STORAGE_ZONE}/${fileName}`;
 
-			const response = await fetch(deleteUrl, {
-				method: "DELETE",
-				headers: {
-					accesskey: process.env.BUNNY_STORAGE_API_KEY,
-				},
-			});
+				const response = await fetch(deleteUrl, {
+					method: "DELETE",
+					headers: {
+						accesskey: process.env.BUNNY_STORAGE_API_KEY,
+					},
+				});
 
-			if (!response.ok) {
-				throw new AppError(
-					`Failed to delete cover image : ${response.statusText}`
-				);
+				if (!response.ok && response.status !== 404) {
+					throw new AppError(
+						`Failed to delete cover image : ${response.statusText}`
+					);
+				}
+			} catch (error) {
+				console.error("Error deleting cover image:", error);
+				// On continue même si la suppression de l'image échoue
 			}
 		}
 
