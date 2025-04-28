@@ -4,18 +4,24 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { logout, isPrivatePage } from "@/lib/serverActions/session/sessionServerActions";
+import { useAuth } from "@/app/AuthContext";
 
 export default function NavbarDropdown({userId}) {
 	const [isOpen, setIsOpen] = useState(false);
 	const dropdownRef = useRef(null);
 	const router = useRouter();
+	const {setIsAuthenticated} = useAuth();
 
 	function toggleDropdown() {
 		setIsOpen(!isOpen);
 	}
   async function handleLogout() {
 		await logout();
-    
+		setIsAuthenticated({
+			isConnected: false,
+			userId: null,
+			loading: false
+		})
 		if(isPrivatePage(window.location.pathname)) {
 			router.push("/signin");
 		}
