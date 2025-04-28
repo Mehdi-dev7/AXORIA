@@ -2,10 +2,12 @@
 import { Session } from "@/lib/models/session";
 import { User } from "@/lib/models/user";
 import { connectToDB } from "@/lib/utils/db/connectToDB";
+import { AppError } from "@/lib/utils/errorHandling/customError";
 import bcrypt from "bcryptjs";
+import { revalidateTag } from "next/cache";
 import { cookies } from "next/headers";
 import slugify from "slugify";
-import { AppError } from "@/lib/utils/errorHandling/customError";
+
 export async function register(formData) {
 	const { userName, email, password, passwordRepeat } =
 		Object.fromEntries(formData); // On ne peut pas faire du destrtucuting de formData ce n est pas un obj iterable
@@ -24,15 +26,19 @@ export async function register(formData) {
 		}
 
 		const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-		if(typeof email !== "string" || !emailRegex.test(email.trim())) {
-			throw new AppError("Invalid email format")
+		if (typeof email !== "string" || !emailRegex.test(email.trim())) {
+			throw new AppError("Invalid email format");
 		}
 
 		await connectToDB();
 		const user = await User.findOne({ $or: [{ userName }, { email }] });
 
 		if (user) {
-			throw new AppError(user.userName === userName ? "Username already exists" : "Email already exists");
+			throw new AppError(
+				user.userName === userName
+					? "Username already exists"
+					: "Email already exists"
+			);
 		}
 		const normalizedUserName = slugify(userName, { lower: true, strict: true });
 
@@ -53,10 +59,10 @@ export async function register(formData) {
 		return { success: true };
 	} catch (error) {
 		console.log("Error while registering the user", error);
-		if(error instanceof AppError) {
-			throw error
+		if (error instanceof AppError) {
+			throw error;
 		}
-		throw new Error("An error occured while registering the user")
+		throw new Error("An error occured while registering the user");
 	}
 }
 
@@ -105,6 +111,7 @@ export async function login(formData) {
 			sameSite: "Lax", // Attaques CSRF
 		});
 
+		revalidateTag("auth-session");
 		return { success: true };
 	} catch (error) {
 		console.log("Error while signing in the user :", error);
@@ -129,6 +136,7 @@ export async function logout() {
 			maxAge: 0, // On supprime le cookie immédiatement
 			sameSite: "strict",
 		});
+		revalidateTag("auth-session");
 		return { success: true };
 	} catch (error) {
 		console.log("Error while signing out the user :", error);
