@@ -1,7 +1,7 @@
 import { getPostsByTag } from "@/lib/serverMethods/blog/postMethods";
 import BlogCard from "@/components/BlogCard";
 
-
+export const revalidate = 60;
 export default async function TagPage({ params }) {
 
 	const { tag } = await params;

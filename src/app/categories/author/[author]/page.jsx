@@ -1,6 +1,8 @@
 import { getPostsByAuthor } from "@/lib/serverMethods/blog/postMethods";
 import BlogCard from "@/components/BlogCard";
 
+export const revalidate = 60;
+
 export default async function AuthorPage({ params }) {
 
 	const { author } = await params;

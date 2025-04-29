@@ -1,5 +1,8 @@
 import { getTags } from "@/lib/serverMethods/blog/tagMethods";
 import Link from "next/link";
+
+export const revalidate = 60;
+
 export default async function Categories() {
 	const tags = await getTags();
 	// console.log(tags, "tags");
