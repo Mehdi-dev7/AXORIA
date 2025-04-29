@@ -1,42 +1,46 @@
 "use client";
+import { useAuth } from "@/app/AuthContext";
+import {
+	isPrivatePage,
+	logout,
+} from "@/lib/serverActions/session/sessionServerActions";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { logout, isPrivatePage } from "@/lib/serverActions/session/sessionServerActions";
-import { useAuth } from "@/app/AuthContext";
 
-export default function NavbarDropdown({userId}) {
+export default function NavbarDropdown({ userId }) {
 	const [isOpen, setIsOpen] = useState(false);
 	const dropdownRef = useRef(null);
 	const router = useRouter();
-	const {setIsAuthenticated} = useAuth();
+	const { setIsAuthenticated } = useAuth();
 
 	function toggleDropdown() {
 		setIsOpen(!isOpen);
 	}
-  async function handleLogout() {
-		await logout();
-		setIsAuthenticated({
-			isConnected: false,
-			userId: null,
-			loading: false
-		})
-		if(isPrivatePage(window.location.pathname)) {
-			router.push("/signin");
-		}
-  }
+	async function handleLogout() {
+		const result = await logout();
 
+		if (result.success) {
+			setIsAuthenticated({
+				isConnected: false,
+				userId: null,
+				loading: false,
+			});
+			if (isPrivatePage(window.location.pathname)) {
+				router.push("/signin");
+			}
+		}
+	}
 	useEffect(() => {
-		function handleClickOutside  (event)  {
+		function handleClickOutside(event) {
 			if (!dropdownRef.current.contains(event.target)) {
 				setIsOpen(false);
 			}
-		};
+		}
 		document.addEventListener("click", handleClickOutside);
 		return () => {
 			document.removeEventListener("click", handleClickOutside);
-
 		};
 	}, []);
 	return (
@@ -56,7 +60,9 @@ export default function NavbarDropdown({userId}) {
 						</Link>
 					</li>
 					<li className="bg-slate-50 hover:bg-slate-200">
-						<button className="w-full p-4 text-left" onClick={handleLogout}>Sign Out</button>
+						<button className="w-full p-4 text-left" onClick={handleLogout}>
+							Sign Out
+						</button>
 					</li>
 				</ul>
 			)}

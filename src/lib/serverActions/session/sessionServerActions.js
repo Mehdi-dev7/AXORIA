@@ -112,7 +112,8 @@ export async function login(formData) {
 		});
 
 		revalidateTag("auth-session");
-		return { success: true };
+		return { success: true, userId: user._id.toString() };
+
 	} catch (error) {
 		console.log("Error while signing in the user :", error);
 
