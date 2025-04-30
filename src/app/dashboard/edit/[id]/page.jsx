@@ -2,8 +2,8 @@ import { getPostForEdit } from "@/lib/serverMethods/blog/postMethods";
 import ClientEditForm from "./(components)/ClientEditForm";
 
 export default async function EditPostPage({ params }) {
-	const { slug } = await params;
-	const post = await getPostForEdit(slug);
+	const { id } = await params;
+	const post = await getPostForEdit(id);
 	// console.log("Post avant sérialisation:", post);
 
 	const serializablePost = JSON.parse(

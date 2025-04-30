@@ -270,6 +270,8 @@ export async function editPost(formData) {
 			{ new: true }
 		);
 
+		revalidatePath(`/articles/${updatedPost.slug}`);
+
 		return { success: true, slug: updatedPost.slug };
 	} catch (err) {
 		if (err instanceof AppError) {
@@ -324,7 +326,6 @@ export async function deletePost(id) {
 		}
 
 		revalidatePath(`/articles/${post.slug}`);
-		return { success: true };
 	} catch (err) {
 		console.log("Error while deleting the post:", err);
 

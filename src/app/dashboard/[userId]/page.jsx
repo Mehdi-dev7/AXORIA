@@ -25,7 +25,7 @@ export default async function Dashboard({ params }) {
 								{post.title}
 							</Link>
 							<Link
-								href={`/dashboard/edit/${post.slug}`}
+								href={`/dashboard/edit/${post._id}`}
 								className="bg-indigo-500 hover:bg-indigo-700 min-w-20 text-center text-white font-bold py-2 px-4 rounded mr-2"
 							>
 								Edit
