@@ -27,7 +27,7 @@ export default function NavbarDropdown({ userId }) {
 				userId: null,
 				loading: false,
 			});
-			if (isPrivatePage(window.location.pathname)) {
+			if (await isPrivatePage(window.location.pathname)) {
 				router.push("/signin");
 			}
 		}
